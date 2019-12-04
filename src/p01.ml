@@ -19,7 +19,6 @@ let rec reFuel ans lst = match lst with
     [] -> ans;
     | x::rest -> recursiveFuel ans x +. reFuel ans rest;
 ;;
-
     
 let resultP2 = int_of_float (reFuel 0.0 input);;
 print_string "\nResult P2: ";
