@@ -10,12 +10,13 @@ let inputB = ["L1001";"D833";"L855";"D123";"R36";"U295";"L319";"D700";"L164";"U5
    struct
     type t = int * int
     let compare (x0,y0) (x1,y1) =
-        if x0 = x1 && y0 = y1 then 1 else 0;;
+        match compare x0 x1 with
+          0 -> compare y0 y1;
+        | c -> c;
    end
 
    module PairsSet = Set.Make(IntPairs) *)
 
-(* let m = PairsSet.(empty |> add (2,3) |> add (5,7) |> add (11,13)) *)
 
 let rec addPoints (x,y) points = 
     let ((x1, y1)::rest) = points in
@@ -38,8 +39,6 @@ let rec parseMove lst accPoints =
         | 'L' -> let points = addPoints (-amount, 0) accPoints in parseMove (List.tl lst) points;
         | _ -> accPoints ;;
 
-(* let setA1 = PairsSet.(empty |> add (0,0));;
-   let setB1 = PairsSet.(empty |> add (0,0));; *)
 let movesA1 = parseMove inputA1 [(0,0)];;
 let movesB1 = parseMove inputB1 [(0,0)];;
 let movesA2 = parseMove inputA2 [(0,0)];;
@@ -47,15 +46,75 @@ let movesB2 = parseMove inputB2 [(0,0)];;
 let movesAS = parseMove inputA [(0,0)];;
 let movesBS = parseMove inputB [(0,0)];;
 
-(* 
-let compare (x0,y0) (x1,y1) =
-    if x0 = x1 && y0 = y1 then 0 else if x0 > x1 then 1 else if y0 > y1 then 1 else -1;;
+let calcDist (x, y) = abs x + abs y;;
 
-let newMovesA = List.sort_uniq compare movesAS;;
-let newMovesB = List.sort_uniq compare movesBS;; *)
+let compareDist a b = calcDist a - calcDist b ;;
+
+let comparePoint (x0,y0) (x1,y1) =
+    match compare x0 x1 with
+      0 -> compare y0 y1;
+    | c -> c;;
+
+let sortedA1 = List.sort compareDist movesA1;;
+let sortedB1 = List.sort compareDist movesB1;;
+let sortedA2 = List.sort compareDist movesA2;;
+let sortedB2 = List.sort compareDist movesB2;;
+let sortedAS = List.sort compareDist movesAS;;
+let sortedBS = List.sort compareDist movesBS;;
 
 
-let rec getShortestDist movesA movesB dist = match movesA with
+let rec print_tuples =
+    function
+    | [] -> ()
+    | (a, b) :: rest ->
+      Printf.printf "%d, %d; " a b;
+      print_tuples rest;;
+
+let rec findMatch lstA lstB saveB dist = 
+    if calcDist (List.hd lstA) > dist || calcDist (List.hd lstB) > dist then dist else
+        (
+            (* print_string "A: "; print_tuples [(List.hd lstA)]; print_endline "";
+               print_string "B: ";  print_tuples [(List.hd lstB)]; print_endline ""; *)
+            match lstA, lstB with
+            | a::restA , b::_ when calcDist a < calcDist b -> findMatch restA lstB lstB dist;
+            | a::_ , b::restB when calcDist a > calcDist b -> findMatch lstA restB restB dist;
+            | _::restA, [] -> findMatch restA saveB (List.tl saveB) dist;
+            | [], _ -> dist;
+            | a::[], b::[] -> if comparePoint a b = 0 then calcDist a else dist;
+            | a::restA, b0::b1::restB -> 
+              (
+                  if comparePoint a b0 = 0 
+                  then calcDist a 
+                  else 
+                      match compareDist a b1 with
+                      | 0 -> findMatch lstA (b1::restB) saveB dist;
+                        (* | n when n > 0 -> findMatch lstA restB restB dist; *)
+                      | _ -> findMatch restA saveB saveB dist;
+                        (* | _ -> print_string "Something went wrong first: "; 
+                           print_string "A: "; print_tuples [a]; print_endline "";
+                           print_string "B1: ";  print_tuples [b1]; print_endline ""; dist; *)
+              )
+            | _ -> print_string "Something went wrong second"; dist;
+        );;
+
+let rec getShortestSorted lstA lstB dist = 
+    match lstA, lstB with
+    | [], _ -> dist;
+    | _, [] -> dist;
+    |a::restA, b::restB -> 
+      print_string "A: "; print_tuples [a]; print_endline "";
+      print_string "B: ";  print_tuples [b]; print_endline "";
+      if calcDist a > dist || calcDist b > dist then dist else
+          (match compareDist a b with
+           | n when n < 0 -> getShortestSorted restA lstB dist;
+           | 0 -> if comparePoint a b = 0 then (calcDist a) else findMatch lstA restB restB dist;
+           | n when n > 0 -> getShortestSorted lstA restB dist;
+           | _ -> print_string "Something went wrong"; dist;
+          );;
+
+
+
+(* let rec getShortestDist movesA movesB dist = match movesA with
     | [] -> dist;
     | (xa, ya)::restA -> (
             let rec getDist moves shortest = match moves with
@@ -71,24 +130,18 @@ let rec getShortestDist movesA movesB dist = match movesA with
             in let newDist = getDist movesB dist in 
             if newDist < dist then getShortestDist restA movesB newDist else getShortestDist restA movesB dist
         )
-;;
+   ;; *)
 
-(* print_int (getShortestDist movesA1 movesB1 10000000);
-   print_string "\n"; *)
-(* print_int (getShortestDist movesA2 movesB2 10000000);
-   print_string "\n" *)
-(* print_int (getShortestDist movesAS movesBS 10000000);
-   print_string "\n" *)
-
-
+print_int (findMatch sortedA1 sortedB1 sortedB1 10000000);
+print_string " is Result 1 \n";;
+print_int (findMatch sortedA2 sortedB2 sortedB2 10000000);
+print_string " is Result 2 \n";;
+print_int (findMatch sortedAS sortedBS sortedBS 10000000);
+print_string "\n";;
 
 
-let rec print_tuples =
-    function
-    | [] -> ()
-    | (a, b) :: rest ->
-      Printf.printf "%d, %d; " a b;
-      print_tuples rest
+
+
 
 (* let () =
     print_tuples movesA;;
@@ -98,4 +151,4 @@ let rec print_tuples =
    print_int (List.length newMovesB);
    print_string "\n" *)
 (* let () =
-    print_tuples movesB1;; *)
+    print_tuples sortedA1;; *)
