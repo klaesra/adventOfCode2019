@@ -78,7 +78,6 @@ let rec findMatch lstA lstB saveB dist =
                   else 
                       match compareDist a b1 with
                       | 0 -> findMatch lstA (b1::restB) saveB dist;
-                        (* | n when n > 0 -> findMatch lstA restB restB dist; *)
                       | _ -> findMatch restA saveB saveB dist;
                         (* | _ -> print_string "Something went wrong first: "; 
                            print_string "A: "; print_tuples [a]; print_endline "";
@@ -90,24 +89,52 @@ let rec findMatch lstA lstB saveB dist =
 
 
 
+(* print_int (findMatch sortedA1 sortedB1 sortedB1 10000000);
+   print_string " is Result 1 \n";;
+   print_int (findMatch sortedA2 sortedB2 sortedB2 10000000);
+   print_string " is Result 2 \n";;
+   print_int (findMatch sortedAS sortedBS sortedBS 10000000);
+   print_string "\n";; *)
 
-print_int (findMatch sortedA1 sortedB1 sortedB1 10000000);
-print_string " is Result 1 \n";;
-print_int (findMatch sortedA2 sortedB2 sortedB2 10000000);
-print_string " is Result 2 \n";;
-print_int (findMatch sortedAS sortedBS sortedBS 10000000);
+
+let rec findClosestIntersection lstA lstB savedA savedB bestDist baseDist accDist = 
+    match lstA, lstB with
+    | _, _ when savedA = [] || savedB = [] || baseDist >= bestDist -> bestDist;
+    | [], [] -> print_string "It's not happening!"; bestDist;
+    | [], _::restB -> findClosestIntersection savedA restB savedA restB bestDist (baseDist + 1) 0;
+    | _::restA, [] -> findClosestIntersection restA savedB restA savedB bestDist (baseDist + 1) 0;
+    | _::restA, _::_ when accDist + baseDist >= bestDist -> findClosestIntersection restA savedB savedA savedB bestDist baseDist (accDist + 1);
+    | a::restA, b::restB -> 
+      (* print_string "A: "; print_tuples [a]; print_endline "";
+         print_string "B: ";  print_tuples [b]; print_endline "";  *)
+      (* print_string "bestDist: ";  print_int bestDist; print_string " baseDist: ";  print_int baseDist; print_string " accDist: ";  print_int accDist; print_endline "";  *)
+      match comparePoint a b with 
+      | 0 -> let newDist = baseDist + accDist + 1 in 
+        if newDist < bestDist 
+        then findClosestIntersection restA restB savedA savedB newDist baseDist (accDist + 1)
+        else findClosestIntersection restA restB savedA savedB bestDist baseDist (accDist + 1)
+      | _ -> 
+        findClosestIntersection restA savedB savedA savedB bestDist baseDist (accDist + 1);;
+
+
+let revMovesA1 = List.rev movesA1;;
+let revMovesB1 = List.rev movesB1;;
+let revMovesA2 = List.rev movesA2;;
+let revMovesB2 = List.rev movesB2;;
+let revMovesAS = List.rev movesAS;;
+let revMovesBS = List.rev movesBS;;
+
+print_int (findClosestIntersection revMovesA1 revMovesB1 revMovesA1 revMovesB1 10000000 1 0);
+print_string "\n";;
+print_int (findClosestIntersection revMovesA2 revMovesB2 revMovesA2 revMovesB2 10000000 1 0);
+print_string "\n";;
+print_int (findClosestIntersection revMovesAS revMovesBS revMovesAS revMovesBS 10000000 1 0);
 print_string "\n";;
 
-
-
-
-
 (* let () =
-    print_tuples movesA;;
-
-   print_int (List.length movesB);
-   print_string "\n";
-   print_int (List.length newMovesB);
-   print_string "\n" *)
+    print_int (List.length movesA1);
+    print_string "\n";
+    print_int (List.length movesB1);
+    print_string "\n" *)
 (* let () =
-    print_tuples sortedA1;; *)
+    print_tuples movesA1;; *)
